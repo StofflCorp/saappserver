@@ -43,6 +43,8 @@ $router->group(['prefix' => 'r/api'], function() use ($router) {
     $router->post('users/{id}/shoppingCart', ['uses' => 'UserController@addShoppingCartProduct']);
     $router->put('users/{user_id}/shoppingCart/{product_id}', ['uses' => 'UserController@changeShoppingCartProductQuantity']);
     $router->delete('users/{user_id}/shoppingCart/{product_id}', ['uses' => 'UserController@removeShoppingCartProduct']);
+    $router->get('users/{user_id}/orders', ['uses' => 'UserController@showOrders']);
+    $router->post('users/{user_id}/shoppingCart/order', ['uses' => 'UserController@order']);
 
     $router->get('products/{id}', ['uses' => 'ProductController@showOneProduct']);
 
@@ -56,6 +58,7 @@ $router->group(['prefix' => 'r/api'], function() use ($router) {
     $router->put('orders/{id}', ['uses' => 'OrderController@update']);
     $router->put('orders/{order_id}/products/{product_id}', ['uses' => 'OrderController@changeProductAmount']);
     $router->delete('orders/{order_id}/products/{product_id}', ['uses' => 'OrderController@removeProduct']);
+
   });
 
   $router->group(['middleware' => 'jwt.emp.auth'], function() use ($router) {

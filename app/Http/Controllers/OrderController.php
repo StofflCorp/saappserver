@@ -7,12 +7,21 @@ use Illuminate\Http\Request;
 
 class OrderController extends Controller {
 
-  public function showAllOrders() {
-    return response()->json(Order::all());
+  public function showAllOrders(Request $request) {
+    if($request->exists('all')) {
+      return response()->json(Order::with('products')->paginate());
+    }
+    else if($request->exists('ready')) {
+      return response()->json(Order::with('products')->where('status', '=', 'ready')->paginate());
+    }
+    else if($request->exists('finished')) {
+      return response()->json(Order::with('products')->where('status', '=', 'finished')->paginate());
+    }
+    return response()->json(Order::with('products')->where('status', '=', 'ordered')->paginate());
   }
 
   public function showOneOrder($id) {
-    return response()->json(Order::find($id));
+    return response()->json(Order::with('products')->find($id));
   }
 
   public function showProducts($id) {

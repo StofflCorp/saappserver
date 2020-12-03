@@ -61,10 +61,28 @@ class UserController extends Controller {
     return response()->json($user->jokes()->get());
   }
 
+  public function showOrders($user_id) {
+    $user = User::findOrFail($user_id);
+    return response()->json($user->orders()->get());
+  }
+
   private function associateNewOrder($user) {
     $order = Order::create(['user_id' => $user->id, 'status' => 'not_ordered']);
     $user->shoppingCart()->associate($order);
     $user->save();
+  }
+
+  public function order($user_id, Request $request) {
+    $this->validate($request, [
+      'pickup_date' => 'required|date_format:Y-m-d H:i:s',
+    ]);
+
+    $user = User::findOrFail($user_id);
+    $user->shoppingCart()->update(['status' => 'ordered', 'pickup_date' => $request->input('pickup_date')]);
+
+    $result = response()->json($user->shoppingCart()->with('products')->get());
+    $this->associateNewOrder($user);
+    return $result;
   }
 
   public function showShoppingCartProducts($id) {
