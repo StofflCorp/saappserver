@@ -24,7 +24,7 @@ class JwtEmpMiddleware {
       //Unauthorized response if no token available
       return response()->json([
         'error' => 'Token not provided.'
-      ], 400);
+      ], 401);
     }
 
     try {
@@ -34,14 +34,14 @@ class JwtEmpMiddleware {
       return response()->json([
         'error' => 'An error occurred while decoding token.',
         'expired' => true
-      ], 400);
+      ], 401);
     }
 
     $employee = Employee::find($credentials->sub);
     if(!$employee) {
       return response()->json([
         'error' => 'You must be an employee to view this!'
-      ], 400);
+      ], 401);
     }
 
     //Put user in request

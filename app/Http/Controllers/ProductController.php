@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Product;
+use App\MeatPartition;
 use App\ImageController;
 use Illuminate\Http\Request;
 
@@ -13,7 +14,24 @@ class ProductController extends Controller {
   }
 
   public function showOneProduct($id) {
-    return response()->json(Product::with('image:id,savedFileName')->find($id));
+    return response()->json(Product::with('image:id,savedFileName','partitions')->find($id));
+  }
+
+  public function addMeatPartition($id, Request $request) {
+    $this->validate($request, [
+      'partition' => 'required|numeric|exists:meat_partitions,id',
+    ]);
+    $product = Product::find($id);
+    $product->partitions()->attach($request->input('partition'));
+
+    return response()->json($product->partitions()->get());
+  }
+
+  public function removeMeatPartition($product_id, $partition_id) {
+    $product = Product::find($product_id);
+    $product->partitions()->detach($partition_id);
+
+    return response()->json($product->partitions()->get());
   }
 
   public function create(Request $request) {
@@ -40,13 +58,13 @@ class ProductController extends Controller {
         $product->save();
       }
     }
-    $product = Product::with('image:id,savedFileName')->find($product->id);
+    $product = Product::with('image:id,savedFileName','partitions')->find($product->id);
 
     return response()->json($product, 201);
   }
 
   public function update($id, Request $request) {
-    $product = Product::with('image:id,savedFileName')->findOrFail($id);
+    $product = Product::with('image:id,savedFileName','partitions')->findOrFail($id);
     $this->validate($request, [
       'category_id' => 'numeric|exists:categories,id',
       'price' => 'numeric',

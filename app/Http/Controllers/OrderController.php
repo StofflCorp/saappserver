@@ -32,10 +32,16 @@ class OrderController extends Controller {
   public function addProduct($id, Request $request) {
     $this->validate($request, [
       'product' => 'required|numeric|exists:products,id',
-      'quantity' => 'required|numeric'
+      'quantity' => 'required|numeric',
+      'partition_id' => 'numeric|exists:meat_partitions,id',
+      'partition_value' => 'numeric',
+      'include_bone' => 'numeric'
     ]);
     $order = Order::find($id);
-    $order->products()->attach($request->input('product'), ['quantity' => $request->input('quantity')]);
+    $order->products()->attach($request->input('product'), ['quantity' => $request->input('quantity'),
+                                                            'partition_id' => $request->input('partition_id'),
+                                                            'partition_value' => $request->input('partition_id'),
+                                                            'include_bone' => $request->input('include_bone')]);
 
     return response()->json($order->products()->get());
   }

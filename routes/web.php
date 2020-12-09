@@ -93,6 +93,14 @@ $router->group(['prefix' => 'r/api'], function() use ($router) {
     $router->post('products', ['uses' => 'ProductController@create']);
     $router->put('products/{id}', ['uses' => 'ProductController@update']);
     $router->delete('products/{id}', ['uses' => 'ProductController@delete']);
+    $router->post('products/{id}/partitions', ['uses' => 'ProductController@addMeatPartition']);
+    $router->delete('products/{product_id}/partitions/{partition_id}', ['uses' => 'ProductController@removeMeatPartition']);
+
+    $router->get('meatPartitions', ['uses' => 'MeatPartitionController@showAllMeatPartitions']);
+    $router->get('meatPartitions/{id}', ['uses' => 'MeatPartitionController@showOneMeatPartition']);
+    $router->post('meatPartitions', ['uses' => 'MeatPartitionController@create']);
+    $router->put('meatPartitions/{id}', ['uses' => 'MeatPartitionController@update']);
+    $router->delete('meatPartitions/{id}', ['uses' => 'MeatPartitionController@delete']);
 
     $router->get('orders', ['uses' => 'OrderController@showAllOrders']);
     $router->get('orders/{id}', ['uses' => 'OrderController@showOneOrder']);

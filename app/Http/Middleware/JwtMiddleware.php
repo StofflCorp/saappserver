@@ -13,7 +13,7 @@ class JwtMiddleware {
 
   public function handle($request, Closure $next, $guard=null) {
     $token = $request->get('token');
-    
+
     if($request->header('Authorization')) {
       $key = explode(' ', $request->header('Authorization'));
       if($key[1]) {
@@ -25,7 +25,7 @@ class JwtMiddleware {
       //Unauthorized response if no token available
       return response()->json([
         'error' => 'Token not provided.'
-      ], 400);
+      ], 401);
     }
 
     try {
@@ -35,7 +35,7 @@ class JwtMiddleware {
       return response()->json([
         'error' => 'An error occurred while decoding token.',
         'expired' => true
-      ], 400);
+      ], 401);
     }
 
     $user = User::find($credentials->sub);
@@ -44,7 +44,7 @@ class JwtMiddleware {
       if(!$user) {
         return response()->json([
           'error' => 'You must be a user to view this!'
-        ], 400);
+        ], 401);
       }
     }
 

@@ -23,7 +23,7 @@ class CategoryController extends Controller {
 
   public function showProducts($id) {
     $category = Category::findOrFail($id);
-    return response()->json($category->products()->with('image:id,savedFileName')->get());
+    return response()->json($category->products()->with('image:id,savedFileName','partitions')->get());
   }
 
   public function addProduct($id, Request $request) {
@@ -33,14 +33,14 @@ class CategoryController extends Controller {
     $category = Category::findOrFail($id);
     $category->products()->attach($request->input('product'));
 
-    return response()->json($category->products()->get());
+    return response()->json($category->products()->with('image:id,savedFileName','partitions')->get());
   }
 
   public function removeProduct($category_id, $product_id) {
     $category = Category::findOrFail($category_id);
     $category->products()->detach($product_id);
 
-    return response()->json($category->products()->get());
+    return response()->json($category->products()->with('image:id,savedFileName','partitions')->get());
   }
 
   public function create(Request $request) {
