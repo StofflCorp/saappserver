@@ -4,7 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Product;
 use App\MeatPartition;
-use App\ImageController;
+use App\Http\Controllers\ImageController;
 use Illuminate\Http\Request;
 
 class ProductController extends Controller {
