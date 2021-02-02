@@ -5,7 +5,9 @@ namespace App\Http\Controllers;
 use App\User;
 use App\Event;
 use App\Order;
+use App\Product;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 
 class UserController extends Controller {
 
@@ -64,6 +66,50 @@ class UserController extends Controller {
   public function showOrders($user_id) {
     $user = User::findOrFail($user_id);
     return response()->json($user->orders()->get());
+  }
+
+  public function showPreparingOrders($user_id) {
+    $user = User::findOrFail($user_id);
+    return response()->json($user->orders()->where('status','ordered')->orWhere('status','ready')->withCount(['products', 'products as price_sum' => function($query) {
+      $query->select(DB::raw('ROUND(SUM(price*quantity),2)'));
+    }])->orderBy('pickup_date')->get());
+  }
+
+  public function showStatistics($user_id) {
+    $user = User::findOrFail($user_id);
+    $stats = array();
+    //Order Count
+    $stats[] = (object)array(
+      'name' => 'Gesamt abgeschlossene Einkäufe',
+      'value' => $user->orders()->where('status','finished')->count()
+    );
+
+    //Order Sum
+    $orderSums = $user->orders()->where('status','finished')->withCount(['products as price_sum' => function($query) {
+      $query->select(DB::raw('ROUND(SUM(price*quantity),2)'));
+    }])->get();
+    $fullSum = 0;
+    foreach ($orderSums as $s) {
+      $fullSum = $fullSum + $s->price_sum;
+    }
+    $stats[] = (object)array(
+      'name' => 'Gesamtwert aller Einkäufe',
+      'value' => $fullSum
+    );
+
+    //Distinct Product Count
+    $stats[] = (object)array(
+      'name' => 'Anzahl gekaufter unterschiedlicher Artikel',
+      'value' => Product::whereIn('id', $user->orders()->where('status','finished')->select('id')->get())->distinct('id')->count()
+    );
+    return response()->json($stats);
+  }
+
+  public function showLatestOrders($user_id) {
+    $user = User::findOrFail($user_id);
+    return response()->json($user->orders()->where('status','finished')->withCount(['products', 'products as price_sum' => function($query) {
+      $query->select(DB::raw('ROUND(SUM(price*quantity),2)'));
+    }])->orderBy('pickup_date','desc')->take(3)->get());
   }
 
   private function associateNewOrder($user) {

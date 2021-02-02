@@ -44,7 +44,10 @@ $router->group(['prefix' => 'r/api'], function() use ($router) {
     $router->put('users/{user_id}/shoppingCart/{product_id}', ['uses' => 'UserController@changeShoppingCartProductQuantity']);
     $router->delete('users/{user_id}/shoppingCart/{product_id}', ['uses' => 'UserController@removeShoppingCartProduct']);
     $router->get('users/{user_id}/orders', ['uses' => 'UserController@showOrders']);
+    $router->get('users/{user_id}/preparingOrders', ['uses' => 'UserController@showPreparingOrders']);
+    $router->get('users/{user_id}/latestOrders', ['uses' => 'UserController@showLatestOrders']);
     $router->post('users/{user_id}/shoppingCart/order', ['uses' => 'UserController@order']);
+    $router->get('users/{user_id}/statistics', ['uses' => 'UserController@showStatistics']);
 
     $router->get('products/{id}', ['uses' => 'ProductController@showOneProduct']);
 
@@ -54,10 +57,6 @@ $router->group(['prefix' => 'r/api'], function() use ($router) {
     $router->get('categories/{id}/products', ['uses' => 'CategoryController@showProducts']);
 
     $router->get('orders/{id}/products', ['uses' => 'OrderController@showProducts']);
-    $router->post('orders/{id}/products', ['uses' => 'OrderController@addProduct']);
-    $router->put('orders/{id}', ['uses' => 'OrderController@update']);
-    $router->put('orders/{order_id}/products/{product_id}', ['uses' => 'OrderController@changeProductAmount']);
-    $router->delete('orders/{order_id}/products/{product_id}', ['uses' => 'OrderController@removeProduct']);
 
   });
 
@@ -105,6 +104,10 @@ $router->group(['prefix' => 'r/api'], function() use ($router) {
     $router->get('orders', ['uses' => 'OrderController@showAllOrders']);
     $router->get('orders/{id}', ['uses' => 'OrderController@showOneOrder']);
     $router->delete('orders/{id}', ['uses' => 'OrderController@delete']);
+    $router->post('orders/{id}/products', ['uses' => 'OrderController@addProduct']);
+    $router->put('orders/{id}', ['uses' => 'OrderController@update']);
+    $router->put('orders/{order_id}/products/{product_id}', ['uses' => 'OrderController@changeProductAmount']);
+    $router->delete('orders/{order_id}/products/{product_id}', ['uses' => 'OrderController@removeProduct']);
     $router->post('orders', ['uses' => 'OrderController@create']);
 
     //Image Handling

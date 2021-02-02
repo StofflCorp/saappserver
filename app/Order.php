@@ -30,6 +30,10 @@ class Order extends Model {
       return $this->belongsTo('App\User');
     }
 
+    public function productSum() {
+      return $this->products()->sum('price');
+    }
+
 }
 
 ?>

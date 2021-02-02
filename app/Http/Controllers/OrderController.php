@@ -9,24 +9,24 @@ class OrderController extends Controller {
 
   public function showAllOrders(Request $request) {
     if($request->exists('all')) {
-      return response()->json(Order::with('products')->paginate());
+      return response()->json(Order::with('products.image:id,savedFileName')->get());
     }
     else if($request->exists('ready')) {
-      return response()->json(Order::with('products')->where('status', '=', 'ready')->paginate());
+      return response()->json(Order::with('products.image:id,savedFileName')->where('status', '=', 'ready')->get());
     }
     else if($request->exists('finished')) {
-      return response()->json(Order::with('products')->where('status', '=', 'finished')->paginate());
+      return response()->json(Order::with('products.image:id,savedFileName')->where('status', '=', 'finished')->get());
     }
-    return response()->json(Order::with('products')->where('status', '=', 'ordered')->paginate());
+    return response()->json(Order::with('products.image:id,savedFileName')->where('status', '=', 'ordered')->get());
   }
 
   public function showOneOrder($id) {
-    return response()->json(Order::with('products')->find($id));
+    return response()->json(Order::with('products.image:id,savedFileName')->find($id));
   }
 
   public function showProducts($id) {
     $order = Order::find($id);
-    return response()->json($order->products()->get());
+    return response()->json($order->products()->with('image:id,savedFileName')->get());
   }
 
   public function addProduct($id, Request $request) {
@@ -43,7 +43,7 @@ class OrderController extends Controller {
                                                             'partition_value' => $request->input('partition_id'),
                                                             'include_bone' => $request->input('include_bone')]);
 
-    return response()->json($order->products()->get());
+    return response()->json($order->products()->with('image:id,savedFileName')->get());
   }
 
   public function changeProductAmount($order_id, $product_id, Request $request) {
@@ -53,14 +53,14 @@ class OrderController extends Controller {
     $order = Order::find($id);
     $order->products()->updateExistingPivot($product_id, ['quantity' => $request->input('quantity')]);
 
-    return response()->json($order->products()->get());
+    return response()->json($order->products()->with('image:id,savedFileName')->get());
   }
 
   public function removeProduct($order_id, $product_id) {
     $order = Order::find($order_id);
     $order->products()->detach($product_id);
 
-    return response()->json($order->products()->get());
+    return response()->json($order->products()->with('image:id,savedFileName')->get());
   }
 
   public function create(Request $request) {

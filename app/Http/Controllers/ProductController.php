@@ -71,6 +71,17 @@ class ProductController extends Controller {
       'stock' => 'numeric',
       'image_id' => 'numeric|exists:images,id'
     ]);
+    if($request->exists('stock')) {
+      if($request->input('stock') == 0) {
+        $product->update(['status' => 'out_of_stock']);
+      }
+      else if($request->input('stock') < 10) {
+        $product->update(['status' => 'running_low']);
+      }
+      else {
+        $product->update(['status' => 'in_stock']);
+      }
+    }
     $product->update($request->all());
 
     return response()->json($product, 200);
