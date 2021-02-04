@@ -42,10 +42,6 @@ class User extends Model implements AuthenticatableContract, AuthorizableContrac
       return $this->hasMany('App\Order');
     }
 
-    public function products() {
-      return $this->hasManyThrough('App\Product','App\Order');
-    }
-
     public function shoppingCart() {
       return $this->belongsTo('App\Order','currentOrder');
     }

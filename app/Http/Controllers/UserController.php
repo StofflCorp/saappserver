@@ -131,6 +131,51 @@ class UserController extends Controller {
     return $result;
   }
 
+  public function copyOrderToShoppingCart($user_id, Request $request) {
+    $this->validate($request, [
+      'order_id' => 'required|numeric|exists:orders,id',
+      'merge_tactic' => 'numeric'
+    ]);
+    $user = User::findOrFail($user_id);
+    $order = Order::with('products')->findOrFail($request->input('order_id'));
+    if($user->shoppingCart == null) {
+      $this->associateNewOrder($user);
+    }
+
+    //Copy products
+    $copiedProducts = [];
+    foreach($order->products as $p) {
+      $copiedProducts[$p->id] = ['quantity' => $p->pivot->quantity,
+                                  'partition_id' => $p->pivot->partition_id,
+                                  'partition_value' => $p->pivot->partition_value,
+                                  'include_bone' => $p->pivot->include_bone];
+    }
+
+    //Merge, copy, override, etc.
+    if($user->shoppingCart->products()->count() > 0) {
+      if($request->filled('merge_tactic')) {
+        if($request->input('merge_tactic') == 0) { // 0 = soft merge, Produkte ergänzen
+          $user->shoppingCart->products()->syncWithoutDetaching($copiedProducts);
+          return response()->json(['success' => 'Added items.']);
+        }
+        else if($request->input('merge_tactic') == 1) { // 1 = override merge, Produktliste überschreiben
+          $user->shoppingCart->products()->sync($copiedProducts);
+          return response()->json(['success' => 'Overrode items.']);
+        }
+      }
+      return response()->json([
+        'warning' => 'Es sind bereits Produkte im Kühlschrank. Möchten Sie die alte Bestellung ergänzen oder überschreiben?',
+        'merge_tactics' => [
+          ['code' => '0', 'name' => 'Ergänzen'],
+          ['code' => '1', 'name' => 'Überschreiben']
+        ]
+      ]);
+    }
+
+    $user->shoppingCart->products()->attach($copiedProducts);
+    return response()->json(['success' => 'Copied items.']);
+  }
+
   public function showShoppingCartProducts($id) {
     $user = User::findOrFail($id);
     if($user->shoppingCart == null) {

@@ -25,7 +25,7 @@ class OrderController extends Controller {
   }
 
   public function showProducts($id) {
-    $order = Order::find($id);
+    $order = Order::findOrFail($id);
     return response()->json($order->products()->with('image:id,savedFileName')->get());
   }
 
@@ -37,7 +37,7 @@ class OrderController extends Controller {
       'partition_value' => 'numeric',
       'include_bone' => 'numeric'
     ]);
-    $order = Order::find($id);
+    $order = Order::findOrFail($id);
     $order->products()->attach($request->input('product'), ['quantity' => $request->input('quantity'),
                                                             'partition_id' => $request->input('partition_id'),
                                                             'partition_value' => $request->input('partition_id'),
@@ -50,14 +50,14 @@ class OrderController extends Controller {
     $this->validate($request, [
       'quantity' => 'required|numeric'
     ]);
-    $order = Order::find($id);
+    $order = Order::findOrFail($id);
     $order->products()->updateExistingPivot($product_id, ['quantity' => $request->input('quantity')]);
 
     return response()->json($order->products()->with('image:id,savedFileName')->get());
   }
 
   public function removeProduct($order_id, $product_id) {
-    $order = Order::find($order_id);
+    $order = Order::findOrFail($order_id);
     $order->products()->detach($product_id);
 
     return response()->json($order->products()->with('image:id,savedFileName')->get());

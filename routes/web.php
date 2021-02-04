@@ -47,6 +47,7 @@ $router->group(['prefix' => 'r/api'], function() use ($router) {
     $router->get('users/{user_id}/preparingOrders', ['uses' => 'UserController@showPreparingOrders']);
     $router->get('users/{user_id}/latestOrders', ['uses' => 'UserController@showLatestOrders']);
     $router->post('users/{user_id}/shoppingCart/order', ['uses' => 'UserController@order']);
+    $router->post('users/{user_id}/redoOrder', ['uses' => 'UserController@copyOrderToShoppingCart']);
     $router->get('users/{user_id}/statistics', ['uses' => 'UserController@showStatistics']);
 
     $router->get('products/{id}', ['uses' => 'ProductController@showOneProduct']);
