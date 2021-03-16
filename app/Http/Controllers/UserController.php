@@ -7,6 +7,7 @@ use App\Event;
 use App\Order;
 use App\Product;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\DB;
 
 class UserController extends Controller {
@@ -133,11 +134,11 @@ class UserController extends Controller {
 
   public function copyOrderToShoppingCart($user_id, Request $request) {
     $this->validate($request, [
-      'order_id' => 'required|numeric|exists:orders,id',
+      'order' => 'required|numeric|exists:orders,id',
       'merge_tactic' => 'numeric'
     ]);
     $user = User::findOrFail($user_id);
-    $order = Order::with('products')->findOrFail($request->input('order_id'));
+    $order = Order::with('products')->findOrFail($request->input('order'));
     if($user->shoppingCart == null) {
       $this->associateNewOrder($user);
     }
@@ -181,13 +182,23 @@ class UserController extends Controller {
     if($user->shoppingCart == null) {
       $this->associateNewOrder($user);
     }
-    return response()->json(['order' => $user->shoppingCart, 'products' => $user->shoppingCart->products()->with('image:id,savedFileName')->get()]);
+
+    $products = $user->shoppingCart->products()->with(['image:id,savedFileName','partitions'])->get();
+    foreach($products as $prod) {
+      if($prod->type == 1) {
+        $prod->selectedPartition = $prod->partitions()->where('id', $prod->pivot->partition_id)->first();
+      }
+    }
+    return response()->json(['order' => $user->shoppingCart, 'products' => $products]);
   }
 
   public function addShoppingCartProduct($id, Request $request) {
     $this->validate($request, [
       'product' => 'required|numeric|exists:products,id',
-      'quantity' => 'required|numeric'
+      'quantity' => 'required|numeric',
+      'partition_id' => 'numeric|exists:meat_partitions,id',
+      'partition_value' => 'numeric',
+      'include_bone' => 'numeric'
     ]);
     $user = User::findOrFail($id);
 
@@ -198,7 +209,10 @@ class UserController extends Controller {
       return response()->json(['error' => 'Product already in shopping cart']);
     }
 
-    $user->shoppingCart->products()->attach($request->input('product'), ['quantity' => $request->input('quantity')]);
+    $user->shoppingCart->products()->attach($request->input('product'), ['quantity' => $request->input('quantity'),
+                                                            'partition_id' => $request->input('partition_id'),
+                                                            'partition_value' => $request->input('partition_value'),
+                                                            'include_bone' => $request->input('include_bone')]);
     return response()->json(['order' => $user->shoppingCart, 'products' => $user->shoppingCart->products()->get()]);
   }
 
@@ -213,16 +227,28 @@ class UserController extends Controller {
 
   public function changeShoppingCartProductQuantity($user_id, $product_id, Request $request) {
     $this->validate($request, [
-      'quantity' => 'required|numeric'
+      'quantity' => 'required|numeric',
+      'partition_id' => 'numeric|exists:meat_partitions,id',
+      'partition_value' => 'numeric',
+      'include_bone' => 'numeric'
     ]);
     $user = User::findOrFail($user_id);
-    $user->shoppingCart->products()->updateExistingPivot($product_id, ['quantity' => $request->input('quantity')]);
+    $user->shoppingCart->products()->updateExistingPivot($product_id, [
+      'quantity' => $request->input('quantity'),
+      'partition_id' => $request->input('partition_id'),
+      'partition_value' => $request->input('partition_value'),
+      'include_bone' => $request->input('include_bone')
+    ]);
     return response()->json(['order' => $user->shoppingCart, 'products' => $user->shoppingCart->products()->get()]);
   }
 
   public function update($id, Request $request) {
     $user = User::findOrFail($id);
-    $user->update($request->all());
+    $requestData = $request->except('email_verified_at', 'temp_hash');
+    if(isset($requestData['password'])) {
+      $requestData['password'] = Hash::make($request->input('password'));
+    }
+    $user->update($requestData);
 
     return response()->json($user, 200);
   }

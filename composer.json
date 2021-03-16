@@ -7,7 +7,10 @@
     "require": {
         "php": "^7.2",
         "firebase/php-jwt": "^5.1",
-        "laravel/lumen-framework": "^6.0"
+        "flipbox/lumen-generator": "^8.2",
+        "guzzlehttp/guzzle": "^7.2",
+        "illuminate/mail": "^7.30",
+        "laravel/lumen-framework": "^7.0"
     },
     "require-dev": {
         "fzaninotto/faker": "^1.4",

@@ -5,10 +5,14 @@ namespace App\Http\Controllers;
 use Validator;
 use App\User;
 use App\Employee;
+use App\Mail\AccountCreated;
 use Firebase\JWT\JWT;
 use Illuminate\Http\Request;
 use Firebase\JWT\ExpiredException;
+use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\DB;
 use Laravel\Lumen\Routing\Controller as BaseController;
 
 class AuthController extends BaseController {
@@ -220,14 +224,41 @@ class AuthController extends BaseController {
 
        $requestData = $request->all();
 
-       $user = User::create([
-         'prename' => $requestData['prename'],
-         'surname' => $requestData['surname'],
-         'email' => $requestData['email'],
-         'password' => Hash::make($requestData['password'])
-       ]);
+       $user = null;
+       $requestToken = null;
+       DB::transaction(function() use ($requestData) {
+         $user = User::create([
+           'prename' => $requestData['prename'],
+           'surname' => $requestData['surname'],
+           'email' => $requestData['email'],
+           'password' => Hash::make($requestData['password']),
+           'temp_hash' => Hash::make(Str::random(32))
+         ]);
 
-       return response()->json(['user' => $user, 'token' => $this->jwt($user)], 201);
+         $requestToken = $this->jwt($user);
+         Mail::to($user->email)->send(new AccountCreated($user, $requestToken));
+       });
+       return response()->json(['user' => $user, 'token' => $requestToken], 201);
+     }
+
+     public function verifyMail($user_id, Request $request) {
+       $this->validate($request, [
+         'hash' => 'required'
+       ]);
+       $user = User::findOrFail($user_id);
+       if(!empty($user->email_verified_at)) {
+         return view('mail.verified', ['term' => 'bereits']);
+       }
+       if(!empty($user->temp_hash) && $user->temp_hash == $request->input('hash')) {
+         $user->update(['temp_hash' => '', 'email_verified_at' => DB::raw('now()')]);
+         return view('mail.verified', ['term' => 'erfolgreich']);
+       }
+       else {
+         return view('mail.error');
+       }
+
+       return view('mail.verified');
+
      }
 
 }

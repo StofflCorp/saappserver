@@ -39,13 +39,21 @@ class JwtMiddleware {
     }
 
     $user = User::find($credentials->sub);
+    $isUser = true;
     if(!$user) {
       $user = Employee::find($credentials->sub);
+      $isUser = false;
       if(!$user) {
         return response()->json([
-          'error' => 'You must be a user to view this!'
+          'error' => 'You must be a registered user to view this!'
         ], 401);
       }
+    }
+
+    if(($isUser && empty($user->email_verified_at)) && !$request->is('r/api/users/*/verifyMail')) {
+      return response()->json([
+        'error' => 'You need to verify your email first!'
+      ], 401);
     }
 
     //Put user in request

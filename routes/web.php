@@ -22,7 +22,6 @@ $router->post('r/auth/refreshToken', ['uses' => 'AuthController@refreshToken']);
 $router->group(['prefix' => 'r/api'], function() use ($router) {
 
   $router->post('users', ['uses' => 'AuthController@createUser']);
-  $router->post('employees', ['uses' => 'AuthController@createEmployee']);
 
   $router->get('news', ['uses' => 'NewsController@showAllNews']);
   $router->get('news/{id}', ['uses' => 'NewsController@showOneNews']);
@@ -32,6 +31,7 @@ $router->group(['prefix' => 'r/api'], function() use ($router) {
   $router->get('jokes/{id}', ['uses' => 'JokeController@showOneJoke']);
 
   $router->group(['middleware' => 'jwt.auth'], function() use ($router) {
+    $router->get('users/{user_id}/verifyMail', ['uses' => 'AuthController@verifyMail']);
     $router->get('users/{id}', ['uses' => 'UserController@showOneUser']);
     $router->get('users/{id}/events', ['uses' => 'UserController@showEvents']);
     $router->post('users/{id}/events', ['uses' => 'UserController@addEvent']);
@@ -64,6 +64,7 @@ $router->group(['prefix' => 'r/api'], function() use ($router) {
   $router->group(['middleware' => 'jwt.emp.auth'], function() use ($router) {
     $router->get('employees', ['uses' => 'EmployeeController@showAllEmployees']);
     $router->get('employees/{id}', ['uses' => 'EmployeeController@showOneEmployee']);
+    $router->post('employees', ['uses' => 'AuthController@createEmployee']);
     $router->delete('employees/{id}', ['uses' => 'EmployeeController@delete']);
     $router->put('employees/{id}', ['uses' => 'EmployeeController@update']);
 

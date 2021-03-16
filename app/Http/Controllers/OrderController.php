@@ -40,7 +40,7 @@ class OrderController extends Controller {
     $order = Order::findOrFail($id);
     $order->products()->attach($request->input('product'), ['quantity' => $request->input('quantity'),
                                                             'partition_id' => $request->input('partition_id'),
-                                                            'partition_value' => $request->input('partition_id'),
+                                                            'partition_value' => $request->input('partition_value'),
                                                             'include_bone' => $request->input('include_bone')]);
 
     return response()->json($order->products()->with('image:id,savedFileName')->get());
