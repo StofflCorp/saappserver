@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use Log;
 use App\Image;
 use Illuminate\Http\Request;
 
@@ -24,7 +25,7 @@ class ImageController extends Controller {
     ]);
 
     if($request->hasFile('image')) {
-      $createdImg = self::createImage($request->file('image'), $request->input('name'));
+      $createdImg = self::createImage($request->file('image'), $request->input('name'), $request->input('originalFileName'));
 
       if($createdImg->success == 1) {
         return $this->responseSuccess($createdImg->data);
@@ -38,8 +39,9 @@ class ImageController extends Controller {
     }
   }
 
-  public static function createImage($image, $imgName) {
-    $original_filename = $image->getClientOriginalName();
+  public static function createImage($image, $imgName, $imgFileName = null) {
+    $original_filename = $imgFileName ?? $image->getClientOriginalName();
+    Log::info('Creating image: ' . $imgName . ' - ' . $original_filename);
     $original_filename_arr = explode('.', $original_filename);
     $file_ext = end($original_filename_arr);
     $destination_path = self::$dirPath;
@@ -78,7 +80,7 @@ class ImageController extends Controller {
     $fullPath = self::$dirPath . $image->savedFileName;
 
     $refDeleted = file_exists($fullPath) && is_writable($fullPath) && unlink(realpath($fullPath));
-    
+
     $image->delete();
 
     return response(['message' => 'Deleted Successfully', 'refDeleted' => $refDeleted], 200);

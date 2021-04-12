@@ -95,7 +95,7 @@ class UserController extends Controller {
     }
     $stats[] = (object)array(
       'name' => 'Gesamtwert aller Einkäufe',
-      'value' => $fullSum
+      'value' => $fullSum*15 . ' €'
     );
 
     //Distinct Product Count

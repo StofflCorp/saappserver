@@ -87,6 +87,24 @@ class CategoryController extends Controller {
     return response('Deleted Successfully', 200);
   }
 
+  public function getAvailableMeat() {
+    $shops = ['Rind' => 11, 'Kalb' => 12, 'Schwein' => 13];
+    $productList = ['in_stock' => [], 'running_low' => [], 'out_of_stock' => []];
+    foreach ($productList as $state => $products) {
+      foreach ($shops as $shop => $shop_id) {
+        $products[$shop] = Category::with(['products' => function($query) use ($state) {
+          return $query->where('status',$state)->select(['category_id', 'name', 'stock']);
+        }])->where('shop_id', $shop_id)->select('id','name')->get();
+      }
+      $productList[$state] = $products;
+      unset($shop);
+      unset($shop_id);
+    }
+    unset($state);
+    unset($products);
+    return response()->json($productList);
+  }
+
 }
 
 ?>

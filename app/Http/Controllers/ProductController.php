@@ -89,9 +89,6 @@ class ProductController extends Controller {
 
   public function delete($id) {
     $product = Product::findOrFail($id);
-    if($product->image != null) {
-      (new ImageController())->delete($product->image->id);
-    }
     $product->delete();
     return response('Deleted Successfully', 200);
   }

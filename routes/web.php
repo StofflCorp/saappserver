@@ -117,6 +117,10 @@ $router->group(['prefix' => 'r/api'], function() use ($router) {
     $router->get('images/{id}', ['uses' => 'ImageController@ShowOneImage']);
     $router->post('images', ['uses' => 'ImageController@uploadImage']);
     $router->delete('images/{id}', ['uses' => 'ImageController@delete']);
+
+    $router->group(['prefix' => 'statistics'], function() use ($router) {
+      $router->get('meatAvailability', ['uses' => 'CategoryController@getAvailableMeat']);
+    });
   });
 
 });
