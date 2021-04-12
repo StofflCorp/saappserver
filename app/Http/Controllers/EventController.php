@@ -58,9 +58,6 @@ class EventController extends Controller {
 
   public function delete($id) {
     $event = Event::findOrFail($id);
-    if($event->image != null) {
-      (new ImageController())->delete($event->image->id);
-    }
     $event->delete();
     return response('Deleted Successfully', 200);
   }

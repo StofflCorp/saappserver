@@ -54,9 +54,6 @@ class NewsController extends Controller {
 
   public function delete($id) {
     $news = News::findOrFail($id);
-    if($news->image != null) {
-      (new ImageController())->delete($news->image->id);
-    }
     $news->delete();
     return response('Deleted Successfully', 200);
   }

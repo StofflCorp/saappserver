@@ -80,9 +80,6 @@ class CategoryController extends Controller {
 
   public function delete($id) {
     $category = Category::findOrFail($id);
-    if($category->image != null) {
-      (new ImageController())->delete($category->image->id);
-    }
     $category->delete();
     return response('Deleted Successfully', 200);
   }
