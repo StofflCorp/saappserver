@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Category;
 use App\Product;
+use App\Image;
 use App\Http\Controllers\ImageController;
 use Illuminate\Http\Request;
 
@@ -68,12 +69,22 @@ class CategoryController extends Controller {
 
   public function update($id, Request $request) {
     $this->validate($request, [
-      'image_id' => 'numeric|exists:images,id',
+      'image_id' => 'numeric',
       'shop_id' => 'numeric'
     ]);
 
     $category = Category::findOrFail($id);
-    $category->update($request->all());
+    $category->update($request->except('image_id'));
+    if($request->has('image_id') && ($category->image == null || $request->input('image_id') != $category->image->id)) {
+      $img = Image::find($request->input('image_id'));
+      if($img) {
+        $category->image()->associate($img);
+      }
+      else {
+        $category->image()->dissociate();
+      }
+      $category->save();
+    }
 
     return response()->json(Category::with('image:id,savedFileName')->findOrFail($id), 200);
   }

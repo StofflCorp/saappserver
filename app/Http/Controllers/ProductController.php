@@ -69,8 +69,9 @@ class ProductController extends Controller {
       'category_id' => 'numeric|exists:categories,id',
       'price' => 'numeric',
       'stock' => 'numeric',
-      'image_id' => 'numeric|exists:images,id'
+      'image_id' => 'numeric'
     ]);
+    $product->update($request->except('image_id'));
     if($request->exists('stock')) {
       if($request->input('stock') == 0) {
         $product->update(['status' => 'out_of_stock']);
@@ -82,7 +83,17 @@ class ProductController extends Controller {
         $product->update(['status' => 'in_stock']);
       }
     }
-    $product->update($request->all());
+
+    if($request->has('image_id') && ($product->image == null || $request->input('image_id') != $product->image->id)) {
+      $img = Image::find($request->input('image_id'));
+      if($img) {
+        $product->image()->associate($img);
+      }
+      else {
+        $product->image()->dissociate();
+      }
+      $product->save();
+    }
 
     return response()->json($product, 200);
   }

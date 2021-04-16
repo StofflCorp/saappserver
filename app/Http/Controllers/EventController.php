@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Event;
+use App\Image;
 use App\ImageController;
 use Illuminate\Http\Request;
 
@@ -21,7 +22,7 @@ class EventController extends Controller {
       'name' => 'required',
       'description' => 'required',
       'location' => 'required',
-      'day' => 'required|date',
+      'day' => 'required|date_format:Y-m-d',
       'startTime' => 'required|date_format:G:i',
       'endTime' => 'required|date_format:G:i|after:startTime',
       'image_id' => 'numeric|exists:images,id',
@@ -45,13 +46,24 @@ class EventController extends Controller {
 
   public function update($id, Request $request) {
     $this->validate($request, [
-      'day' => 'date',
+      'day' => 'date_format:Y-m-d',
       'startTime' => 'date_format:G:i',
       'endTime' => 'date_format:G:i|after:startTime',
-      'image_id' => 'numeric|exists:images,id'
+      'image_id' => 'numeric'
     ]);
     $event = Event::findOrFail($id);
-    $event->update($request->all());
+    $event->update($request->except('image_id'));
+
+    if($request->has('image_id') && ($event->image == null || $request->input('image_id') != $event->image->id)) {
+      $img = Image::find($request->input('image_id'));
+      if($img) {
+        $event->image()->associate($img);
+      }
+      else {
+        $event->image()->dissociate();
+      }
+      $event->save();
+    }
 
     return response()->json(Event::with('image:id,savedFileName')->find($event->id), 200);
   }

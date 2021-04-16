@@ -3,13 +3,14 @@
 namespace App\Http\Controllers;
 
 use App\News;
+use App\Image;
 use App\Http\Controllers\ImageController;
 use Illuminate\Http\Request;
 
 class NewsController extends Controller {
 
   public function showAllNews() {
-    return response()->json(News::with('author:id,prename,surname','image:id,savedFileName')->get());
+    return response()->json(News::with('author:id,prename,surname','image:id,savedFileName')->orderBy('created_at','desc')->get());
   }
 
   public function showOneNews($id) {
@@ -44,10 +45,21 @@ class NewsController extends Controller {
   public function update($id, Request $request) {
     $this->validate($request, [
       'author' => 'numeric|exists:employees,id',
-      'image_id' => 'numeric|exists:images,id'
+      'image_id' => 'numeric'
     ]);
     $news = News::findOrFail($id);
-    $news->update($request->all());
+    $news->update($request->except('image_id'));
+
+    if($request->has('image_id') && ($news->image == null || $request->input('image_id') != $news->image->id)) {
+      $img = Image::find($request->input('image_id'));
+      if($img) {
+        $news->image()->associate($img);
+      }
+      else {
+        $news->image()->dissociate();
+      }
+      $news->save();
+    }
 
     return response()->json(News::with('author:id,prename,surname','image:id,savedFileName')->find($news->id), 200);
   }

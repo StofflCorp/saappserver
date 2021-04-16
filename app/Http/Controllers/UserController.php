@@ -6,6 +6,7 @@ use App\User;
 use App\Event;
 use App\Order;
 use App\Product;
+use App\MeatPartition;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\DB;
@@ -127,9 +128,49 @@ class UserController extends Controller {
     $user = User::findOrFail($user_id);
     $user->shoppingCart()->update(['status' => 'ordered', 'pickup_date' => $request->input('pickup_date')]);
 
-    $result = response()->json($user->shoppingCart()->with('products')->get());
-    $this->associateNewOrder($user);
-    return $result;
+    $stockReductionResult = $this->subtractStocks($user);
+    if($stockReductionResult['statusCode'] == 0) {
+      $result = response()->json($user->shoppingCart()->with('products')->get());
+      $this->associateNewOrder($user);
+      return $result;
+    }
+    else {
+      return response()->json($stockReductionResult, 409);
+    }
+  }
+  private function subtractStocks($user) {
+    $orderedProducts = $user->shoppingCart->products;
+    DB::beginTransaction();
+    foreach ($orderedProducts as $product) {
+      $newStock = $product->stock;
+      if($product->type == 0) {
+        $newStock -= $product->pivot->quantity;
+      }
+      else {
+        $partition = MeatPartition::findOrFail($product->pivot->partition_id);
+        //Gewichtartikel oder Gewicht-oder-Stückartikel mit Wahl auf Gewichtsangabe
+        if($partition->type == 0 || ($partition->type == 2 && $product->pivot->partition_value == 0)) {
+          $newStock -= $product->pivot->quantity;
+        }
+        //Stückartikel oder Gewicht-oder-Stückartikel mit Wahl auf Stückangabe
+        else if($partition->type == 1 || ($partition->type == 2 && $product->pivot->partition_value == 1)) {
+          $newStock -= $product->pivot->quantity * ($partition->partition_weight / 1000);
+        }
+      }
+      if($newStock < 0) {
+        DB::rollBack();
+        return ['statusCode' => 1,
+          'status' => 'error',
+          'message'=>'Vorrat unterschritten!',
+          'faultyProduct' => $product->name];
+      }
+      $product->stock = $newStock;
+      $product->save();
+    }
+    DB::commit();
+    return ['statusCode' => 0,
+      'status' => 'success',
+      'message'=>'Vorräte abgezogen'];
   }
 
   public function copyOrderToShoppingCart($user_id, Request $request) {
