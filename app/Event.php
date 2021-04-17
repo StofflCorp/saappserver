@@ -20,7 +20,7 @@ class Event extends Model {
     *
     *  @var array
     */
-    protected $hidden = [];
+    protected $hidden = ['image_id'];
 
     public function users() {
       return $this->belongsToMany('App\User');

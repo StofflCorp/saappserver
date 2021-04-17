@@ -10,11 +10,11 @@ use Illuminate\Http\Request;
 class EventController extends Controller {
 
   public function showAllEvents() {
-    return response()->json(Event::all());
+    return response()->json(Event::with('image:id,savedFileName')->all());
   }
 
   public function showOneEvent($id) {
-    return response()->json(Event::find($id));
+    return response()->json(Event::with('image:id,savedFileName')->find($id));
   }
 
   public function create(Request $request) {
@@ -23,8 +23,8 @@ class EventController extends Controller {
       'description' => 'required',
       'location' => 'required',
       'day' => 'required|date_format:Y-m-d',
-      'startTime' => 'required|date_format:G:i',
-      'endTime' => 'required|date_format:G:i|after:startTime',
+      'startTime' => 'required|date_format:H:i',
+      'endTime' => 'required|date_format:H:i|after:startTime',
       'image_id' => 'numeric|exists:images,id',
       'image' => 'image',
       'image_name' => 'required_with:image'
@@ -47,8 +47,8 @@ class EventController extends Controller {
   public function update($id, Request $request) {
     $this->validate($request, [
       'day' => 'date_format:Y-m-d',
-      'startTime' => 'date_format:G:i',
-      'endTime' => 'date_format:G:i|after:startTime',
+      'startTime' => 'date_format:H:i',
+      'endTime' => 'date_format:H:i|after:startTime',
       'image_id' => 'numeric'
     ]);
     $event = Event::findOrFail($id);
