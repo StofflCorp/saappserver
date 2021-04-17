@@ -10,7 +10,7 @@ use Illuminate\Http\Request;
 class EventController extends Controller {
 
   public function showAllEvents() {
-    return response()->json(Event::with('image:id,savedFileName')->all());
+    return response()->json(Event::with('image:id,savedFileName')->get());
   }
 
   public function showOneEvent($id) {
