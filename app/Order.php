@@ -30,8 +30,29 @@ class Order extends Model {
       return $this->belongsTo('App\User');
     }
 
-    public function productSum() {
-      return $this->products()->sum('price');
+    public function getPriceSumAttribute() {
+      $priceSum = 0;
+      $orderedProducts = $this->products;
+      foreach ($orderedProducts as $product) {
+        $orderedStock = 0;
+        if($product->type == 0) {
+          //Normales Produkt => Mengenangabe verwenden
+          $orderedStock = $product->pivot->quantity;
+        }
+        else {
+          //Siehe UserController für Berechnung
+          $partition = MeatPartition::findOrFail($product->pivot->partition_id);
+          if($partition->type == 1 || ($partition->type == 2 && $product->pivot->partition_value == 1)) {
+            $orderedStock = $product->pivot->quantity * ($partition->partition_weight / 1000);
+          }
+          else {
+            $orderedStock = $product->pivot->quantity;
+          }
+        }
+        //Preis berechnen
+        $priceSum += $orderedStock * $product->price;
+      }
+      return $priceSum;
     }
 
 }

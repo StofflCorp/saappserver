@@ -72,9 +72,12 @@ class UserController extends Controller {
 
   public function showPreparingOrders($user_id) {
     $user = User::findOrFail($user_id);
-    return response()->json($user->orders()->where('status','ordered')->orWhere('status','ready')->withCount(['products', 'products as price_sum' => function($query) {
-      $query->select(DB::raw('ROUND(SUM(price*quantity),2)'));
-    }])->orderBy('pickup_date')->get());
+    $result = $user->orders()->where('status','ordered')->orWhere('status','ready')->withCount(['products'])->orderBy('pickup_date','desc')->get();
+    foreach($result as $order) {
+      $order->append('priceSum');
+      $order->makeHidden('products');
+    }
+    return response()->json($result);
   }
 
   public function showStatistics($user_id) {
@@ -87,16 +90,14 @@ class UserController extends Controller {
     );
 
     //Order Sum
-    $orderSums = $user->orders()->where('status','finished')->withCount(['products as price_sum' => function($query) {
-      $query->select(DB::raw('ROUND(SUM(price*quantity),2)'));
-    }])->get();
+    $orderSums = $user->orders()->where('status','finished')->get();
     $fullSum = 0;
     foreach ($orderSums as $s) {
-      $fullSum = $fullSum + $s->price_sum;
+      $fullSum = $fullSum + $s->priceSum;
     }
     $stats[] = (object)array(
       'name' => 'Gesamtwert aller Einkäufe',
-      'value' => $fullSum*15 . ' €'
+      'value' => $fullSum . ' €'
     );
 
     //Distinct Product Count
@@ -109,9 +110,12 @@ class UserController extends Controller {
 
   public function showLatestOrders($user_id) {
     $user = User::findOrFail($user_id);
-    return response()->json($user->orders()->where('status','finished')->withCount(['products', 'products as price_sum' => function($query) {
-      $query->select(DB::raw('ROUND(SUM(price*quantity),2)'));
-    }])->orderBy('pickup_date','desc')->take(3)->get());
+    $result = $user->orders()->where('status','finished')->withCount(['products'])->orderBy('pickup_date','desc')->take(3)->get();
+    foreach($result as $order) {
+      $order->append('priceSum');
+      $order->makeHidden('products');
+    }
+    return response()->json($result);
   }
 
   private function associateNewOrder($user) {
@@ -148,13 +152,14 @@ class UserController extends Controller {
       }
       else {
         $partition = MeatPartition::findOrFail($product->pivot->partition_id);
-        //Gewichtartikel oder Gewicht-oder-Stückartikel mit Wahl auf Gewichtsangabe
-        if($partition->type == 0 || ($partition->type == 2 && $product->pivot->partition_value == 0)) {
-          $newStock -= $product->pivot->quantity;
-        }
         //Stückartikel oder Gewicht-oder-Stückartikel mit Wahl auf Stückangabe
-        else if($partition->type == 1 || ($partition->type == 2 && $product->pivot->partition_value == 1)) {
+        if($partition->type == 1 || ($partition->type == 2 && $product->pivot->partition_value == 1)) {
           $newStock -= $product->pivot->quantity * ($partition->partition_weight / 1000);
+        }
+        //Gewichtangabe
+        // else if(($partition->type == 0 || ($partition->type == 2 && $product->pivot->partition_value == 0))) --> würde Typ Checkbox nicht beachten
+        else {
+          $newStock -= $product->pivot->quantity;
         }
       }
       if($newStock < 0) {

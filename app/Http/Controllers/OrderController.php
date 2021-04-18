@@ -3,21 +3,43 @@
 namespace App\Http\Controllers;
 
 use App\Order;
+use App\OrderWithProductAggregations;
+use App\MeatPartition;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 
 class OrderController extends Controller {
 
   public function showAllOrders(Request $request) {
-    if($request->exists('all')) {
-      return response()->json(Order::with('products.image:id,savedFileName')->get());
+    $orderQuery = Order::with('products.image:id,savedFileName');
+
+    //Status filter
+    if($request->has('ready')) {
+      $orderQuery = $orderQuery->where('status', '=', 'ready');
     }
-    else if($request->exists('ready')) {
-      return response()->json(Order::with('products.image:id,savedFileName')->where('status', '=', 'ready')->get());
+    else if($request->has('finished')) {
+      $orderQuery = $orderQuery->where('status', '=', 'finished');
     }
-    else if($request->exists('finished')) {
-      return response()->json(Order::with('products.image:id,savedFileName')->where('status', '=', 'finished')->get());
+    else if($request->has('not_ordered')) {
+      $orderQuery = $orderQuery->where('status', '=', 'not_ordered');
     }
-    return response()->json(Order::with('products.image:id,savedFileName')->where('status', '=', 'ordered')->get());
+    else if(!$request->has('all')) {
+      $orderQuery = $orderQuery->where('status', '=', 'ordered');
+    }
+
+    $result = null;
+    //Include price and product count
+    if($request->has('withPrice')) {
+      $result = $orderQuery->withCount('products')->get();
+      foreach ($result as $o) {
+        $o->append('priceSum');
+      }
+    }
+    else {
+      $result = $orderQuery->get();
+    }
+
+    return response()->json($result);
   }
 
   public function showOneOrder($id) {

@@ -14,7 +14,10 @@ class CategoryController extends Controller {
     return response()->json(Category::with('image:id,savedFileName')->get());
   }
 
-  public function showAllCategoriesOfType($id) {
+  public function showAllCategoriesOfType($id, Request $request) {
+    if($request->has('withProducts')) {
+      return response()->json(Category::where('shop_id',$id)->with(['image:id,savedFileName','products.image:id,savedFileName'])->get());
+    }
     return response()->json(Category::where('shop_id',$id)->with('image:id,savedFileName')->get());
   }
 
@@ -97,20 +100,23 @@ class CategoryController extends Controller {
 
   public function getAvailableMeat() {
     $shops = ['Rind' => 11, 'Kalb' => 12, 'Schwein' => 13];
-    $productList = ['in_stock' => [], 'running_low' => [], 'out_of_stock' => []];
-    foreach ($productList as $state => $products) {
+    $productList = array(['status' => 'in_stock', 'stocks' => []],
+      ['status' => 'running_low', 'stocks' => []],
+      ['status' => 'out_of_stock', 'stocks' => []]);
+    $availabilityList = array();
+    foreach ($productList as $status) {
       foreach ($shops as $shop => $shop_id) {
-        $products[$shop] = Category::with(['products' => function($query) use ($state) {
-          return $query->where('status',$state)->select(['category_id', 'name', 'stock']);
-        }])->where('shop_id', $shop_id)->select('id','name')->get();
+        $status['stocks'][] = ['meatName' => $shop,
+        'categories' => Category::with(['products' => function($query) use ($status) {
+          return $query->where('status',$status)->select(['category_id', 'name', 'stock']);
+        }])->where('shop_id', $shop_id)->select('id','name')->get()];
       }
-      $productList[$state] = $products;
+      $availabilityList[] = $status;
       unset($shop);
       unset($shop_id);
     }
-    unset($state);
-    unset($products);
-    return response()->json($productList);
+    unset($status);
+    return response()->json($availabilityList);
   }
 
 }
