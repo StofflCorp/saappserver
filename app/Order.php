@@ -27,7 +27,7 @@ class Order extends Model {
     }
 
     public function orderer() {
-      return $this->belongsTo('App\User');
+      return $this->belongsTo('App\User','user_id')->select(['id','prename','surname','email']);
     }
 
     public function getPriceSumAttribute() {

@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Product;
+use App\Image;
 use App\MeatPartition;
 use App\Http\Controllers\ImageController;
 use Illuminate\Http\Request;

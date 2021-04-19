@@ -3,7 +3,6 @@
 namespace App\Http\Controllers;
 
 use App\Order;
-use App\OrderWithProductAggregations;
 use App\MeatPartition;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -11,7 +10,7 @@ use Illuminate\Support\Facades\DB;
 class OrderController extends Controller {
 
   public function showAllOrders(Request $request) {
-    $orderQuery = Order::with('products.image:id,savedFileName');
+    $orderQuery = Order::with(['orderer','products.image:id,savedFileName'])->orderBy('pickup_date');
 
     //Status filter
     if($request->has('ready')) {
@@ -39,11 +38,22 @@ class OrderController extends Controller {
       $result = $orderQuery->get();
     }
 
+    //Also include selected meat partitions
+    if($request->has('withSelectedPartition')) {
+      foreach ($result as $o) {
+        foreach ($o->products as $prod) {
+          if($prod->type == 1) {
+            $prod['selectedPartition'] = MeatPartition::find($prod->pivot->partition_id, ['id','name','type','partition_weight']);
+          }
+        }
+      }
+    }
+
     return response()->json($result);
   }
 
   public function showOneOrder($id) {
-    return response()->json(Order::with('products.image:id,savedFileName')->find($id));
+    return response()->json(Order::with(['orderer','products.image:id,savedFileName'])->find($id));
   }
 
   public function showProducts($id) {
