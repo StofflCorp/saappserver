@@ -66,13 +66,15 @@ class UserController extends Controller {
   }
 
   public function showOrders($user_id) {
-    $user = User::findOrFail($user_id);
-    return response()->json($user->orders()->get());
+    $user = User::with('orders')->findOrFail($user_id);
+    return response()->json($user);
   }
 
   public function showPreparingOrders($user_id) {
-    $user = User::findOrFail($user_id);
-    $result = $user->orders()->where('status','ordered')->orWhere('status','ready')->withCount(['products'])->orderBy('pickup_date','desc')->get();
+    $user = User::with(['orders' => function($query) {
+      $query->whereIn('status',['ordered','ready'])->withCount('products')->orderBy('pickup_date','desc');
+    }])->findOrFail($user_id);
+    $result = $user->orders;
     foreach($result as $order) {
       $order->append('priceSum');
       $order->makeHidden('products');
@@ -109,8 +111,10 @@ class UserController extends Controller {
   }
 
   public function showLatestOrders($user_id) {
-    $user = User::findOrFail($user_id);
-    $result = $user->orders()->where('status','finished')->withCount(['products'])->orderBy('pickup_date','desc')->take(3)->get();
+    $user = User::with(['orders' => function($query) {
+      $query->where('status','finished')->withCount('products')->take(3)->orderBy('pickup_date','desc');
+    }])->findOrFail($user_id);
+    $result = $user->orders;
     foreach($result as $order) {
       $order->append('priceSum');
       $order->makeHidden('products');

@@ -22,6 +22,20 @@ class Image extends Model {
     */
     protected $hidden = [];
 
+    //Track objects using this image
+    public function news() {
+      return $this->hasMany('App\News', 'image_id');
+    }
+    public function events() {
+      return $this->hasMany('App\Event', 'image_id');
+    }
+    public function products() {
+      return $this->hasMany('App\Product', 'image_id');
+    }
+    public function categories() {
+      return $this->hasMany('App\Category', 'image_id');
+    }
+
 }
 
 ?>
