@@ -56,9 +56,18 @@ class OrderController extends Controller {
     return response()->json(Order::with(['orderer','products.image:id,savedFileName'])->find($id));
   }
 
-  public function showProducts($id) {
+  public function showProducts($id, Request $request) {
     $order = Order::findOrFail($id);
-    return response()->json($order->products()->with('image:id,savedFileName')->get());
+    $result = $order->products()->with('image:id,savedFileName')->get();
+    //Also include selected meat partitions
+    if($request->has('withSelectedPartition')) {
+      foreach ($result as $p) {
+        if($p->type == 1) {
+          $p['selectedPartition'] = MeatPartition::find($p->pivot->partition_id, ['id','name','type','partition_weight']);
+        }
+      }
+    }
+    return response()->json($result);
   }
 
   public function addProduct($id, Request $request) {
@@ -73,7 +82,8 @@ class OrderController extends Controller {
     $order->products()->attach($request->input('product'), ['quantity' => $request->input('quantity'),
                                                             'partition_id' => $request->input('partition_id'),
                                                             'partition_value' => $request->input('partition_value'),
-                                                            'include_bone' => $request->input('include_bone')]);
+                                                            'include_bone' => $request->input('include_bone'),
+                                                            'note' => $request->input('note','')]);
 
     return response()->json($order->products()->with('image:id,savedFileName')->get());
   }

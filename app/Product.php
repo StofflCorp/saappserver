@@ -34,6 +34,10 @@ class Product extends Model {
       return $this->belongsToMany('App\MeatPartition');
     }
 
+    public function orders() {
+      return $this->belongsToMany('App\Order')->withPivot('quantity', 'partition_id', 'partition_value', 'include_bone', 'note');
+    }
+
 }
 
 ?>

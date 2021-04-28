@@ -23,7 +23,7 @@ class Order extends Model {
     protected $hidden = [];
 
     public function products() {
-      return $this->belongsToMany('App\Product')->withPivot('quantity', 'partition_id', 'partition_value', 'include_bone');
+      return $this->belongsToMany('App\Product')->withPivot('quantity', 'partition_id', 'partition_value', 'include_bone', 'note');
     }
 
     public function orderer() {

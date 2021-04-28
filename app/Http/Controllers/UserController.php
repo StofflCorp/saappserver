@@ -65,16 +65,28 @@ class UserController extends Controller {
     return response()->json($user->jokes()->get());
   }
 
-  public function showOrders($user_id) {
-    $user = User::with('orders')->findOrFail($user_id);
-    return response()->json($user);
+  public function showOrders($user_id, Request $request) {
+    $user = User::findOrFail($user_id);
+
+    //Include price and product count
+    if($request->has('withPrice')) {
+      $result = $user->orders()->where('status','!=','not_ordered')->orderBy('pickup_date','desc')->withCount('products')->get();
+      foreach ($result as $o) {
+        $o->append('priceSum');
+        if($request->has('excludeProducts')) {
+          $o->makeHidden('products');
+        }
+      }
+      return response()->json($result);
+    }
+    else {
+      return response()->json($user->orders()->where('status','!=','not_ordered')->orderBy('pickup_date','desc')->get());
+    }
   }
 
   public function showPreparingOrders($user_id) {
-    $user = User::with(['orders' => function($query) {
-      $query->whereIn('status',['ordered','ready'])->withCount('products')->orderBy('pickup_date','desc');
-    }])->findOrFail($user_id);
-    $result = $user->orders;
+    $user = User::findOrFail($user_id);
+    $result = $user->orders()->whereIn('status',['ordered','ready'])->withCount('products')->orderBy('pickup_date','desc')->get();
     foreach($result as $order) {
       $order->append('priceSum');
       $order->makeHidden('products');
@@ -87,6 +99,7 @@ class UserController extends Controller {
     $stats = array();
     //Order Count
     $stats[] = (object)array(
+      'code' => 'finOrdersCount',
       'name' => 'Gesamt abgeschlossene Einkäufe',
       'value' => $user->orders()->where('status','finished')->count()
     );
@@ -98,23 +111,26 @@ class UserController extends Controller {
       $fullSum = $fullSum + $s->priceSum;
     }
     $stats[] = (object)array(
-      'name' => 'Gesamtwert aller Einkäufe',
+      'code' => 'finOrdersPriceSum',
+      'name' => 'Gesamtwert aller abgeschlossenen Einkäufe',
       'value' => $fullSum . ' €'
     );
 
     //Distinct Product Count
+    $finishedUserOrderIds = $user->orders()->where('status','finished')->select('id')->get();
     $stats[] = (object)array(
+      'code' => 'distinctProductsCount',
       'name' => 'Anzahl gekaufter unterschiedlicher Artikel',
-      'value' => Product::whereIn('id', $user->orders()->where('status','finished')->select('id')->get())->distinct('id')->count()
+      'value' => Product::whereHas('orders', function($query) use ($finishedUserOrderIds) {
+        $query->whereIn('order_id',$finishedUserOrderIds);
+      })->distinct('id')->count()
     );
     return response()->json($stats);
   }
 
   public function showLatestOrders($user_id) {
-    $user = User::with(['orders' => function($query) {
-      $query->where('status','finished')->withCount('products')->take(3)->orderBy('pickup_date','desc');
-    }])->findOrFail($user_id);
-    $result = $user->orders;
+    $user = User::findOrFail($user_id);
+    $result = $user->orders()->where('status','finished')->withCount('products')->take(3)->orderBy('pickup_date','desc')->get();
     foreach($result as $order) {
       $order->append('priceSum');
       $order->makeHidden('products');
